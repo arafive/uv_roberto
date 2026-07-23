@@ -59,7 +59,7 @@ def formatta_tick(x, pos):
         return data.strftime('%H:00')
     
 # %%
-for delay in np.arange(0, 14, 1):
+for delay in np.arange(0, 90, 1):
     for m in [0, 30]:
         adesso_timestamp = pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).floor('30min') - pd.Timedelta(hours=delay) - pd.Timedelta(minutes=m)
         
@@ -234,10 +234,17 @@ for delay in np.arange(0, 14, 1):
                     return np.zeros_like(np.atleast_1d(x), dtype=float)
                 return np.interp(x, x_smooth_totale, y_smooth_totale, left=0, right=0)
             
+            giorno_sinistro = df.index.min().date()
+            soglia_uscita = pd.Timestamp(giorno_sinistro) + pd.Timedelta(hours=20)
+            
             massimi_giorno = []
             for giorno, gruppo_giorno in df.groupby(df.index.date):
                 if gruppo_giorno['UV_MEDIA'].max() == 0:
                     continue
+                
+                if giorno == giorno_sinistro and gg3_ts > soglia_uscita:
+                    continue
+                
                 val_max = df_completo[df_completo.index.date == giorno]['UV_MEDIA'].max()
                 target = pd.Timestamp(giorno) + pd.Timedelta(hours=13) + pd.Timedelta(minutes=30)
                 
@@ -258,10 +265,12 @@ for delay in np.arange(0, 14, 1):
             
             x_min_asse, x_max_asse = mdates.date2num(df.index.min()), mdates.date2num(df.index.max())
             pad_dati = (x_max_asse - x_min_asse) * 0.035
+            x_mezzanotti = mdates.date2num(df.index[(df.index.hour == 0) & (df.index.minute == 0)])
             
             fig.canvas.draw()
             renderer = fig.canvas.get_renderer()
             
+            testi_box = []
             for x_pos, val_max, val_locale in massimi_giorno:
                 y_box = max(7.15, val_locale + 0.5)
                 colore_box = get_colore(val_max, dict_colori)
@@ -271,8 +280,14 @@ for delay in np.arange(0, 14, 1):
                     ha='left', va='center_baseline', color='white',
                     bbox=dict(boxstyle='round,pad=0.3', facecolor=colore_box, edgecolor='none')
                     )
-                
-                bbox_dati = txt.get_window_extent(renderer=renderer).transformed(ax.transData.inverted())
+                testi_box.append((txt, x_pos))
+            
+            fig.canvas.draw()
+            renderer = fig.canvas.get_renderer()
+            
+            for txt, x_pos in testi_box:
+                bbox_patch = txt.get_bbox_patch()
+                bbox_dati = bbox_patch.get_window_extent(renderer=renderer).transformed(ax.transData.inverted())
                 larghezza_box = bbox_dati.x1 - bbox_dati.x0
                 
                 x_finale = x_pos
@@ -281,8 +296,17 @@ for delay in np.arange(0, 14, 1):
                 elif bbox_dati.x0 < x_min_asse:
                     x_finale = x_min_asse + pad_dati
                 
-                x_span = np.linspace(x_finale, x_finale + larghezza_box, 10)
-                y_box = max(7.15, valore_curva(x_span).max() + 0.5)
+                for xm in x_mezzanotti:
+                    if x_finale < xm < x_finale + larghezza_box:
+                        x_finale = xm + pad_dati * 0.3
+                        break
+                
+                maschera_box = (x_smooth_totale >= x_finale) & (x_smooth_totale <= x_finale + larghezza_box)
+                if maschera_box.any():
+                    max_curva_box = y_smooth_totale[maschera_box].max()
+                else:
+                    max_curva_box = valore_curva(np.array([x_finale, x_finale + larghezza_box])).max()
+                y_box = max(7.15, max_curva_box + 0.5)
                 
                 txt.set_position((x_finale, y_box))
             
