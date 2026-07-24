@@ -5,8 +5,6 @@ Autore: daniele.carnevale
 
 import os
 import sys
-import ast
-import configparser
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning)
 
@@ -40,9 +38,6 @@ plt.rc('font', family=font_manager.FontProperties(fname=font_file).get_name(), w
 from danilib import f_settaggio_db_arpal
 connessione = f_settaggio_db_arpal()
 
-# config = configparser.ConfigParser()
-# config.read('./config.ini')
-
 def get_colore(valore, dict_colori):
     for colore, (lo, hi) in dict_colori.items():
         if lo <= valore <= hi:
@@ -74,7 +69,7 @@ x_max_asse_ts = giorno_oggi + pd.Timedelta(days=1)
 adesso = adesso_timestamp.strftime('%Y%m%d%H%M')
 gg3 = gg3_ts.strftime('%Y%m%d%H%M')
 
-print(adesso_timestamp)
+print(f"Sono le {pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).round('1s')} UTC. Tempo selezionato: {adesso_timestamp}")
 
 query = f"""
 SELECT
