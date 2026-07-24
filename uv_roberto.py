@@ -69,7 +69,7 @@ x_max_asse_ts = giorno_oggi + pd.Timedelta(days=1)
 adesso = adesso_timestamp.strftime('%Y%m%d%H%M')
 gg3 = gg3_ts.strftime('%Y%m%d%H%M')
 
-print(f"Sono le {pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).round('1s')} UTC. Tempo selezionato: {adesso_timestamp}")
+print(f"{pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).round('1s').strftime('Sono le %H:%M:%S UTC del %d %B %Y')}. Tempo selezionato: {adesso_timestamp}")
 
 query = f"""
 SELECT
