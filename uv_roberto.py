@@ -58,6 +58,8 @@ def formatta_tick(x, pos):
     else:
         return data.strftime('%H:00')
     
+plot_uvmax, spessore_uvmax = True, 0.3
+
 # %%
 for delay in np.arange(0, 90, 1):
     for m in [0, 30]:
@@ -112,6 +114,15 @@ for delay in np.arange(0, 90, 1):
             '#9063CD': [10.50, 15],
             }
         
+        dict_rischio = {
+            '#97D700': 'Basso',
+            '#FCE300': 'Moderato',
+            '#FF8200': 'Alto',
+            '#EF3340': 'Molto alto',
+            # '#9063CD': 'Estremo,
+            }
+        
+        
         # for stazione in dizionario_df.keys():
         for stazione in ['CFUNZ']:
             cartella_plot = f"plot/{stazione}/{adesso_timestamp.strftime('%Y/%m/%d')}"
@@ -120,9 +131,8 @@ for delay in np.arange(0, 90, 1):
             df = dizionario_df[stazione]
             df = df.fillna(0)
             nome = df.iloc[0]['NAME']
-            df_completo = df['UV_MEDIA'].to_frame()
+            df_completo = df[['UV_MEDIA', 'UV_MASSIMA']]
             df = df_completo[df_completo.index >= gg3_ts]
-            # df = (df.resample('10min').interpolate('linear'))
             
             ##############
             
@@ -148,6 +158,7 @@ for delay in np.arange(0, 90, 1):
             
             x_smooth_totale = []
             y_smooth_totale = []
+            primo_blocco_max = True
             
             id_blocco = (df['UV_MEDIA'] == 0).cumsum()
             for _, blocco in df[df['UV_MEDIA'] > 0].groupby(id_blocco):
@@ -155,11 +166,15 @@ for delay in np.arange(0, 90, 1):
                     continue
                 x_num = mdates.date2num(blocco.index)
                 y = blocco['UV_MEDIA'].values
+                y_max = blocco['UV_MASSIMA'].values
                 
                 grado = min(3, len(blocco) - 1)
                 spline = make_interp_spline(x_num, y, k=grado)
                 x_smooth = np.linspace(x_num.min(), x_num.max(), len(blocco) * 10)
                 y_smooth = np.clip(spline(x_smooth), 0, None)
+                
+                spline_max = make_interp_spline(x_num, y_max, k=grado)
+                y_smooth_max = np.clip(spline_max(x_smooth), 0, None)
                 
                 x_smooth_totale.append(x_smooth)
                 y_smooth_totale.append(y_smooth)
@@ -178,9 +193,46 @@ for delay in np.arange(0, 90, 1):
                 
                 lc = LineCollection(segmenti, colors=colori_segmenti, linewidth=0, zorder=10)
                 ax.add_collection(lc)
+                
+                if plot_uvmax:
+                    ax.plot(
+                        x_smooth, y_smooth_max,
+                        color='black', linewidth=spessore_uvmax, zorder=15,
+                        label='UVI max' if primo_blocco_max else None
+                        )
+                    
+                primo_blocco_max = False
             
             x_smooth_totale = np.concatenate(x_smooth_totale) if x_smooth_totale else np.array([])
             y_smooth_totale = np.concatenate(y_smooth_totale) if y_smooth_totale else np.array([])
+            
+            y_legenda = 0.97
+            x_legenda = 0.02
+            
+            ax.plot(
+                [x_legenda, x_legenda + 0.02], [y_legenda, y_legenda],
+                color='black', linewidth=1, transform=ax.transAxes,
+                clip_on=False, zorder=300
+                )
+            ax.text(
+                x_legenda + 0.03, y_legenda, 'UVI max',
+                transform=ax.transAxes, ha='left', va='center',
+                fontsize=6, color='black', clip_on=False, zorder=300
+                )
+            x_legenda += 0.09 # per rendere più spaziati UVI e Basso
+            
+            for colore, label in dict_rischio.items():
+                txt_legenda = ax.text(
+                    x_legenda, y_legenda, label,
+                    transform=ax.transAxes, ha='left', va='center',
+                    fontsize=6, color='black', fontweight='bold',
+                    clip_on=False, zorder=300,
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor=colore, edgecolor='none')
+                    )
+                fig.canvas.draw()
+                bbox_legenda = txt_legenda.get_bbox_patch().get_window_extent(renderer=fig.canvas.get_renderer())
+                bbox_legenda_axes = bbox_legenda.transformed(ax.transAxes.inverted())
+                x_legenda = bbox_legenda_axes.x1 + 0.015
             
             ######################
             
@@ -277,7 +329,7 @@ for delay in np.arange(0, 90, 1):
                 txt = ax.text(
                     x_pos, y_box, int(np.ceil(val_max)),
                     fontsize=10, fontweight='bold', zorder=200,
-                    ha='left', va='center_baseline', color='white',
+                    ha='left', va='center_baseline', color='black',
                     bbox=dict(boxstyle='round,pad=0.3', facecolor=colore_box, edgecolor='none')
                     )
                 testi_box.append((txt, x_pos))
@@ -315,11 +367,11 @@ for delay in np.arange(0, 90, 1):
                 
             percorso_plot = f"{cartella_plot}/{adesso_timestamp.strftime('%Y-%m-%d_%H%M')}.png"
             plt.savefig(percorso_plot, dpi=300, bbox_inches='tight')
-            os.system(f'convert {percorso_plot} -strip -colors 32 PNG8:{percorso_plot}')
+            # os.system(f'convert {percorso_plot} -strip -colors 32 PNG8:{percorso_plot}')
             
             plt.show()
             plt.close()
             
-            # sss
+            sss
 
 print('\n\nDone.')
