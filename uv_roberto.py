@@ -61,6 +61,7 @@ plot_uvmax, spessore_uvmax = True, 0.3
 #         adesso_timestamp = pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).floor('30min') - pd.Timedelta(hours=delay) - pd.Timedelta(minutes=m)
 
 adesso_timestamp = pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).floor('30min')
+adesso_timestamp = pd.Timestamp('2026-08-21 14:00')
 
 giorno_oggi = adesso_timestamp.normalize()
 gg3_ts = giorno_oggi - pd.Timedelta(days=2)
@@ -174,7 +175,7 @@ for stazione in dizionario_df.keys():
         y = blocco['UV_MEDIA'].values
         y_max = blocco['UV_MASSIMA'].values
         
-        grado = min(3, len(blocco) - 1)
+        grado = 1 #min(3, len(blocco) - 1)
         spline = make_interp_spline(x_num, y, k=grado)
         x_smooth = np.linspace(x_num.min(), x_num.max(), len(blocco) * 10)
         y_smooth = np.clip(spline(x_smooth), 0, None)
@@ -365,9 +366,9 @@ for stazione in dizionario_df.keys():
     plt.savefig(percorso_plot, dpi=300, bbox_inches='tight')
     os.system(f'convert {percorso_plot} -strip -colors 32 PNG8:{percorso_plot}')
     
-    # plt.show()
+    plt.show()
     plt.close()
     
-    # sss
+    sss
 
 print('\n\nDone.')
