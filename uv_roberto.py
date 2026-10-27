@@ -94,6 +94,8 @@ df_query = pd.read_sql(query, con=connessione)
 
 dizionario_df = {
     code: gruppo[['DTRF', 'NAME', 'UV_MEDIA', 'UV_MASSIMA']]
+        .drop_duplicates(subset='DTRF', keep='last')
+        .sort_values('DTRF')
         .assign(DTRF=lambda d: d['DTRF'].dt.tz_localize('UTC').dt.tz_convert('Europe/Rome').dt.tz_localize(None))
         .set_index('DTRF').rename_axis('')
     for code, gruppo in df_query.groupby('CODE')
@@ -129,6 +131,7 @@ for stazione in dizionario_df.keys():
     df = df.fillna(0)
     nome = df.iloc[0]['NAME']
     df = df[['UV_MEDIA', 'UV_MASSIMA']]
+    df = df[~df.index.duplicated(keep='last')].sort_index()
     
     ##############
     
