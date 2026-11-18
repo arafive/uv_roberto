@@ -61,7 +61,7 @@ plot_uvmax, spessore_uvmax = True, 0.3
 #         adesso_timestamp = pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).floor('30min') - pd.Timedelta(hours=delay) - pd.Timedelta(minutes=m)
 
 adesso_timestamp = pd.to_datetime(datetime.now(timezone.utc)).tz_localize(None).floor('30min')
-adesso_timestamp = pd.Timestamp('2026-08-21 14:00')
+adesso_timestamp = pd.Timestamp('2026-10-25 00:00')
 
 giorno_oggi = adesso_timestamp.normalize()
 gg3_ts = giorno_oggi - pd.Timedelta(days=2)
@@ -369,9 +369,9 @@ for stazione in dizionario_df.keys():
     plt.savefig(percorso_plot, dpi=300, bbox_inches='tight')
     os.system(f'convert {percorso_plot} -strip -colors 32 PNG8:{percorso_plot}')
     
-    plt.show()
+    # plt.show()
     plt.close()
     
-    sss
+    # sss
 
 print('\n\nDone.')
